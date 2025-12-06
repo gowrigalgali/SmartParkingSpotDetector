@@ -1,9 +1,10 @@
 // src/App.js
-import React from "react";
+import React, { useEffect } from "react";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { PaperProvider, MD3LightTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import AppNavigator from "./navigation/AppNavigator";
+import { verifyFirebaseSetup } from "./firebase/firebase";
 
 const paperTheme = {
   ...MD3LightTheme,
@@ -23,6 +24,12 @@ const navTheme = {
 };
 
 export default function App() {
+  // Verify Firebase setup on app start
+  useEffect(() => {
+    console.log("🚀 App starting - Verifying Firebase setup...");
+    verifyFirebaseSetup();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <PaperProvider theme={paperTheme}>
