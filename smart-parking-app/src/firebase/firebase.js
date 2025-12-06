@@ -18,6 +18,8 @@ import {
   getAuth,
   initializeAuth,
   getReactNativePersistence,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
 } from "firebase/auth";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -76,6 +78,23 @@ if (!authInstance) {
 }
 
 export const auth = authInstance;
+
+export async function signUp(email, password) {
+  const userCredential = await createUserWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+  return userCredential.user;
+}
+export async function signIn(email, password) {
+  const userCredential = await signInWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+  return userCredential.user;
+}
 
 // -----------------------------------------------------
 // REPORT PARKING EVENT

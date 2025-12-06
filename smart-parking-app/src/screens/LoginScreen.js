@@ -14,62 +14,66 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleAuth = async () => {
-    // Validation
-    if (!email.trim() || !password.trim()) {
-      Alert.alert("Error", "Please enter both email and password");
-      return;
+  if (!email.trim() || !password.trim()) {
+    Alert.alert("Error", "Please enter both email and password");
+    return;
+  }
+
+  if (password.length < 6) {
+    Alert.alert("Error", "Password must be at least 6 characters");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    console.log(`🔄 ${isSignUp ? "Signing up" : "Signing in"}...`);
+
+    const user = isSignUp
+      ? await signUp(email.trim(), password)
+      : await signIn(email.trim(), password);
+
+    console.log("✅ Auth success:", user.uid);
+
+    Alert.alert(
+      "Success",
+      isSignUp ? "Account created successfully!" : "Signed in successfully!"
+    );
+
+    navigation.replace("Map");
+
+  } catch (error) {
+    console.error("❌ Auth exception:", error);
+
+    let errorMessage = "Authentication failed";
+
+    switch (error.code) {
+      case "auth/user-not-found":
+        errorMessage = "No account found with this email.";
+        break;
+      case "auth/wrong-password":
+        errorMessage = "Incorrect password.";
+        break;
+      case "auth/email-already-in-use":
+        errorMessage = "Email already registered.";
+        break;
+      case "auth/invalid-email":
+        errorMessage = "Invalid email address.";
+        break;
+      case "auth/weak-password":
+        errorMessage = "Password must be at least 6 characters.";
+        break;
+      case "auth/network-request-failed":
+        errorMessage = "Network error. Check your internet connection.";
+        break;
     }
 
-    if (password.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters");
-      return;
-    }
+    Alert.alert("Authentication Error", errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
-    setLoading(true);
-    try {
-      console.log(`🔄 Attempting ${isSignUp ? 'sign up' : 'sign in'} with email:`, email.trim());
-      
-      const result = isSignUp 
-        ? await signUp(email.trim(), password) 
-        : await signIn(email.trim(), password);
-      
-      console.log("📋 Auth result:", result);
-      
-      if (result.success) {
-        console.log("✅ Authentication successful!");
-        Alert.alert("Success", isSignUp ? "Account created successfully!" : "Signed in successfully!");
-        // Navigate to Map screen
-        setTimeout(() => {
-          navigation.replace("Map");
-        }, 500);
-      } else {
-        console.error("❌ Authentication failed:", result.error);
-        // User-friendly error messages
-        let errorMessage = result.error || "Authentication failed";
-        
-        if (result.code === "auth/user-not-found") {
-          errorMessage = "No account found with this email. Please sign up first.";
-        } else if (result.code === "auth/wrong-password") {
-          errorMessage = "Incorrect password. Please try again.";
-        } else if (result.code === "auth/email-already-in-use") {
-          errorMessage = "This email is already registered. Please sign in instead.";
-        } else if (result.code === "auth/invalid-email") {
-          errorMessage = "Please enter a valid email address.";
-        } else if (result.code === "auth/weak-password") {
-          errorMessage = "Password is too weak. Please use at least 6 characters.";
-        } else if (result.code === "auth/network-request-failed") {
-          errorMessage = "Network error. Please check:\n\n1. Your internet connection\n2. Firebase Authentication API is enabled in Google Cloud Console\n3. Try again in a moment";
-        }
-        
-        Alert.alert("Authentication Error", errorMessage);
-      }
-    } catch (error) {
-      console.error("❌ Auth exception:", error);
-      Alert.alert("Error", error.message || "Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.screen}>
