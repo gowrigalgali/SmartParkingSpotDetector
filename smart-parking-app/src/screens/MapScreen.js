@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
-import { fetchRecentEvents, reportParking } from "../firebase/firebase";
+import { fetchRecentEvents, reportParking, viewAllParkingEvents } from "../firebase/firebase";
 import { fetchParkingPrediction } from "../api/mlApi";
 import HeatMapLayer from "../components/HeatMapLayer";
 import MarkParkingButton from "../components/MarkParkingButton";
@@ -48,6 +48,7 @@ export default function MapScreen() {
     loadRecentEvents();
     loadPredictions();
   }, [location]);
+
 
   const loadRecentEvents = useCallback(async () => {
     if (!location) return;

@@ -4,8 +4,7 @@ import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { PaperProvider, MD3LightTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import AppNavigator from "./navigation/AppNavigator";
-import { verifyFirebaseSetup } from "./firebase/firebase";
-
+import { testFirebaseConnection, createTestDocument } from "./firebase/firebase";
 const paperTheme = {
   ...MD3LightTheme,
   colors: {
@@ -24,10 +23,14 @@ const navTheme = {
 };
 
 export default function App() {
-  // Verify Firebase setup on app start
+  // Test Firebase connection on app startup
   useEffect(() => {
-    console.log("🚀 App starting - Verifying Firebase setup...");
-    verifyFirebaseSetup();
+    const runTests = async () => {
+      console.log("🚀 App starting - Testing Firebase connection...");
+      await testFirebaseConnection();
+      await createTestDocument();
+    };
+    runTests();
   }, []);
 
   return (
