@@ -1,10 +1,10 @@
 // src/screens/ProfileScreen.js
-import React from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Avatar, Button, Card } from "react-native-paper";
+import { Avatar, Button, Card, Divider } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
-import { auth } from "../firebase/firebase";
+import { auth, signOutUser } from "../firebase/firebase";
 
 const history = [
   { id: "1", title: "Indiranagar 12th Main", time: "Today • 37 min" },
@@ -13,10 +13,45 @@ const history = [
 ];
 
 export default function ProfileScreen({ navigation }) {
+  const [loading, setLoading] = useState(false);
   const user = auth.currentUser;
   const userEmail = user?.email || "User";
   const displayName = userEmail.split("@")[0] || "User";
   const initials = displayName.substring(0, 2).toUpperCase();
+
+  const handleLogout = async () => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const result = await signOutUser();
+              if (result.success) {
+                console.log("✅ User signed out successfully");
+                navigation.replace("Welcome");
+              } else {
+                Alert.alert("Error", result.error || "Failed to sign out");
+                setLoading(false);
+              }
+            } catch (error) {
+              console.error("Logout error:", error);
+              Alert.alert("Error", "Failed to sign out. Please try again.");
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -69,9 +104,26 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="chevron-forward" size={18} color="#94a3b8" />
           </View>
         )}
-        contentContainerStyle={{ gap: 10 }}
+        contentContainerStyle={{ gap: 10, paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
       />
+
+      <Divider style={styles.divider} />
+
+      <View style={styles.logoutSection}>
+        <Button
+          mode="outlined"
+          icon="logout"
+          onPress={handleLogout}
+          style={styles.logoutButton}
+          contentStyle={styles.logoutButtonContent}
+          textColor="#dc2626"
+          loading={loading}
+          disabled={loading}
+        >
+          Sign Out
+        </Button>
+      </View>
     </SafeAreaView>
   );
 }
@@ -180,4 +232,19 @@ const styles = StyleSheet.create({
   },
   listItemTitle: { fontWeight: "600", color: "#0f172a" },
   listItemTime: { color: "#94a3b8" },
+  divider: {
+    marginVertical: 24,
+    marginHorizontal: 24,
+  },
+  logoutSection: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+  },
+  logoutButton: {
+    borderColor: "#dc2626",
+    borderRadius: 12,
+  },
+  logoutButtonContent: {
+    paddingVertical: 8,
+  },
 });
