@@ -20,6 +20,8 @@ import {
   getReactNativePersistence,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut,
 } from "firebase/auth";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -78,6 +80,19 @@ if (!authInstance) {
 }
 
 export const auth = authInstance;
+
+// Export onAuthStateChanged for use in components
+export { onAuthStateChanged };
+
+// Export signOut function for logout
+export async function signOutUser() {
+  try {
+    await signOut(auth);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
 
 export async function signUp(email, password) {
   const userCredential = await createUserWithEmailAndPassword(

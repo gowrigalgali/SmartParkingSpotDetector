@@ -1,9 +1,10 @@
 // src/screens/ProfileScreen.js
 import React from "react";
-import { View, Text, StyleSheet, FlatList } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar, Button, Card } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
+import { auth } from "../firebase/firebase";
 
 const history = [
   { id: "1", title: "Indiranagar 12th Main", time: "Today • 37 min" },
@@ -11,14 +12,25 @@ const history = [
   { id: "3", title: "UB City Block C", time: "Sunday • 1h 12m" },
 ];
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
+  const user = auth.currentUser;
+  const userEmail = user?.email || "User";
+  const displayName = userEmail.split("@")[0] || "User";
+  const initials = displayName.substring(0, 2).toUpperCase();
+
   return (
     <SafeAreaView style={styles.screen}>
+      <TouchableOpacity 
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#0f172a" />
+      </TouchableOpacity>
       <View style={styles.header}>
-        <Avatar.Icon size={64} icon="account" />
+        <Avatar.Text size={64} label={initials} style={styles.avatar} />
         <View>
-          <Text style={styles.name}>Gowri</Text>
-          <Text style={styles.tagline}>Early access member</Text>
+          <Text style={styles.name}>{userEmail}</Text>
+          <Text style={styles.tagline}>Community Contributor</Text>
         </View>
       </View>
 
@@ -77,22 +89,45 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: "#f8fafc",
-    padding: 24,
+  },
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 10,
+    padding: 8,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
+    marginTop: 80,
     marginBottom: 24,
+    paddingHorizontal: 24,
+  },
+  avatar: {
+    backgroundColor: "#2563eb",
   },
   name: {
-    fontSize: 24,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "600",
     color: "#0f172a",
   },
-  tagline: { color: "#94a3b8" },
+  tagline: { 
+    color: "#94a3b8",
+    fontSize: 14,
+    marginTop: 2,
+  },
   card: {
     borderRadius: 20,
+    marginHorizontal: 24,
     marginBottom: 24,
   },
   score: {
@@ -125,6 +160,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginHorizontal: 24,
     marginBottom: 12,
   },
   listTitle: {
@@ -139,6 +175,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     gap: 12,
+    marginHorizontal: 24,
+    marginBottom: 10,
   },
   listItemTitle: { fontWeight: "600", color: "#0f172a" },
   listItemTime: { color: "#94a3b8" },

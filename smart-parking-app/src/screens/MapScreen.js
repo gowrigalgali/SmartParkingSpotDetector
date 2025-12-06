@@ -1,6 +1,6 @@
 // src/screens/MapScreen.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, Alert, StyleSheet, ActivityIndicator, RefreshControl, ScrollView } from "react-native";
+import { View, Text, Alert, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,7 +11,7 @@ import HeatMapLayer from "../components/HeatMapLayer";
 import MarkParkingButton from "../components/MarkParkingButton";
 import PredictionModel from "../components/PredictionModel";
 
-export default function MapScreen() {
+export default function MapScreen({ navigation }) {
   const [location, setLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -191,8 +191,24 @@ export default function MapScreen() {
         </MapView>
 
         <View style={styles.overlayTop}>
-          <Text style={styles.greeting}>Welcome back 👋</Text>
-          <Text style={styles.subGreeting}>Let's find a nearby spot.</Text>
+          <View style={styles.topRow}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.navigate("Welcome")}
+            >
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </TouchableOpacity>
+            <View style={styles.greetingContainer}>
+              <Text style={styles.greeting}>Welcome back 👋</Text>
+              <Text style={styles.subGreeting}>Let's find a nearby spot.</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.profileButton}
+              onPress={() => navigation.navigate("Profile")}
+            >
+              <Ionicons name="person-circle-outline" size={32} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView
@@ -247,9 +263,28 @@ const styles = StyleSheet.create({
     top: 16,
     left: 20,
     right: 20,
+    zIndex: 1,
     padding: 16,
     borderRadius: 16,
     backgroundColor: "rgba(15,23,42,0.72)",
+  },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  backButton: {
+    padding: 8,
+    backgroundColor: "rgba(30, 41, 59, 0.8)",
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  greetingContainer: {
+    flex: 1,
+  },
+  profileButton: {
+    padding: 4,
+    borderRadius: 16,
   },
   greeting: { color: "#e0e7ff", fontSize: 18, fontWeight: "600" },
   subGreeting: { color: "#94a3b8", marginTop: 4 },

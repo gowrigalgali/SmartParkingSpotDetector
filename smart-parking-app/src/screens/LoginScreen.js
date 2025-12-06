@@ -1,6 +1,6 @@
 // src/screens/LoginScreen.js
 import React, { useState } from "react";
-import { View, Text, StyleSheet, StatusBar, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, StatusBar, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, TextInput } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
@@ -78,31 +78,13 @@ export default function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" />
+      <TouchableOpacity 
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </TouchableOpacity>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
-          <Text style={styles.preTitle}>Smart mobility</Text>
-          <Text style={styles.title}>Smart Parking</Text>
-          <Text style={styles.subtitle}>
-            Predict crowd levels, drop parking pins, and let the community guide you to
-            calmer curbs.
-          </Text>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.feature}>
-            <Ionicons name="sparkles-outline" size={22} color="#2563eb" />
-            <Text style={styles.featureText}>AI powered availability forecast</Text>
-          </View>
-          <View style={styles.feature}>
-            <Ionicons name="map-outline" size={22} color="#2563eb" />
-            <Text style={styles.featureText}>Live heatmap from community check-ins</Text>
-          </View>
-          <View style={styles.feature}>
-            <Ionicons name="shield-checkmark-outline" size={22} color="#2563eb" />
-            <Text style={styles.featureText}>Account-safe with Firebase guardrails</Text>
-          </View>
-        </View>
-
         <View style={styles.formCard}>
           <Text style={styles.formTitle}>{isSignUp ? "Create Account" : "Sign In"}</Text>
           
@@ -181,46 +163,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0f172a",
   },
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 10,
+    padding: 8,
+    backgroundColor: "rgba(30, 41, 59, 0.8)",
+    borderRadius: 20,
+  },
   scrollContent: {
     padding: 24,
+    paddingTop: 80,
     paddingBottom: 40,
-  },
-  hero: {
-    marginBottom: 32,
-  },
-  preTitle: {
-    color: "#60a5fa",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 38,
-    color: "#fff",
-    fontWeight: "700",
-  },
-  subtitle: {
-    marginTop: 12,
-    color: "#cbd5f5",
-    lineHeight: 22,
-  },
-  card: {
-    backgroundColor: "#13203c",
-    borderRadius: 20,
-    padding: 20,
-    gap: 16,
-    marginBottom: 24,
-  },
-  feature: {
-    flexDirection: "row",
-    gap: 14,
-    alignItems: "center",
-  },
-  featureText: {
-    color: "#e2e8f0",
-    flex: 1,
-    fontSize: 15,
+    flexGrow: 1,
+    justifyContent: "center",
   },
   formCard: {
     backgroundColor: "#13203c",
