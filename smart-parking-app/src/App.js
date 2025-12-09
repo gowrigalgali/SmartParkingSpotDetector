@@ -1,10 +1,14 @@
 // src/App.js
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { View, Image, StyleSheet } from "react-native";
+
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { PaperProvider, MD3LightTheme } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+
 import AppNavigator from "./navigation/AppNavigator";
 import { testFirebaseConnection, createTestDocument } from "./firebase/firebase";
+
 const paperTheme = {
   ...MD3LightTheme,
   colors: {
@@ -23,16 +27,37 @@ const navTheme = {
 };
 
 export default function App() {
-  // Test Firebase connection on app startup
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     const runTests = async () => {
       console.log("🚀 App starting - Testing Firebase connection...");
       await testFirebaseConnection();
       await createTestDocument();
+
+      // Show logo for 2 seconds
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 2000);
     };
+
     runTests();
   }, []);
 
+  // ✅ Splash Screen
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Image
+          source={require("../assets/icon.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+    );
+  }
+
+  // ✅ Main App
   return (
     <SafeAreaProvider>
       <PaperProvider theme={paperTheme}>
@@ -44,3 +69,15 @@ export default function App() {
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0f172a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logo: {
+    width: 220,
+    height: 220,
+  },
+});
