@@ -1,0 +1,14 @@
+[
+  "loc_enc",
+  "capacity",
+  "hour",
+  "dayofweek",
+  "is_weekend",
+  "lag_1",
+  "lag_4",
+  "lag_96",
+  "roll_mean_4",
+  "roll_mean_96",
+  "rain",
+  "is_event"
+]

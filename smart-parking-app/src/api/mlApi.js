@@ -1,57 +1,120 @@
 // src/api/mlApi.js
+import { Platform } from "react-native";
 
 /**
- * Lightweight mock around the parking availability model.
- * In production this would call your hosted ML service. For now, we generate
- * deterministic-yet-dynamic data based on the coordinates so designers can
- * iterate on the UI without a backend dependency.
+ * =====================================================
+ * DEVICE-AWARE API BASE URL
+ * =====================================================
+ *
+ * IMPORTANT:
+ * - Emulator: uses special loopback IP
+ * - Real phone: MUST use your laptop's local IP
+ * - Production: replace with HTTPS domain
  */
-export async function fetchParkingPrediction({ latitude, longitude }) {
+
+const DEV_MACHINE_IP = "192.168.86.120"; // 🔴 CHANGE THIS to your laptop IP
+
+const API_BASE_URL = __DEV__
+  ? Platform.select({
+      ios:
+        Platform.OS === "ios" && !Platform.isPad && !Platform.isTV
+          ? "http://127.0.0.1:8000"       // ✅ iOS Simulator
+          : `http://${DEV_MACHINE_IP}:8000`, // 📱 real iPhone
+      android: `http://${DEV_MACHINE_IP}:8000`,
+      default: "http://127.0.0.1:8000",
+    })
+  : "https://your-production-api.com";
+
+/**
+ * =====================================================
+ * FETCH PARKING PREDICTION
+ * =====================================================
+ */
+export async function fetchParkingPrediction({
+  latitude,
+  longitude,
+  rain = 0,
+  is_event = 0,
+}) {
   if (typeof latitude !== "number" || typeof longitude !== "number") {
+    console.warn("❌ Invalid coordinates passed to ML API");
     return null;
   }
 
-  // Simulate latency so the UI can show a shimmer/loader.
-  await wait(650);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
-  const base = normalize(latitude, -90, 90);
-  const modifier = normalize(longitude, -180, 180);
+  try {
+    const response = await fetch(`${API_BASE_URL}/predict`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        latitude,
+        longitude,
+        rain,
+        is_event,
+      }),
+    });
 
-  const current = clamp(Math.round(100 - (base * 40 + modifier * 30)), 5, 95);
-  const confidence = clamp(Math.round(70 + modifier * 15), 45, 98);
+    clearTimeout(timeoutId);
 
-  const nextHours = Array.from({ length: 4 }).map((_, idx) => {
-    const delta = idx * 0.18;
-    const value = clamp(
-      Math.round(current + Math.sin(base + idx) * 10 - modifier * 6 + delta * 15),
-      5,
-      97
-    );
-    return {
+    if (!response.ok) {
+      console.error("❌ ML API error:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+
+    /**
+     * Backend returns:
+     * {
+     *   location_id,
+     *   occupancy_rate
+     * }
+     */
+
+    const current = Math.round(data.occupancy_rate);
+    const confidence = 85; // static for now (can be dynamic later)
+
+    // Simulated short-term trend (UI only)
+    const nextHours = Array.from({ length: 4 }).map((_, idx) => ({
       label: idx === 0 ? "Now" : `${idx * 30}m`,
-      value,
+      value: clamp(current + idx * 3 - 4, 5, 95),
+    }));
+
+    const recommendation =
+      current > 70
+        ? "Plenty of slots"
+        : current > 40
+        ? "Moderate demand"
+        : "High demand";
+
+    return {
+      currentOccupancy: current,
+      confidence,
+      nextHours,
+      recommendation,
+      locationId: data.location_id,
+      source: "ml-backend",
     };
-  });
-
-  const recommendation =
-    current > 70 ? "Plenty of slots" : current > 40 ? "Moderate demand" : "High demand";
-
-  return {
-    currentOccupancy: current,
-    confidence,
-    nextHours,
-    recommendation,
-  };
+  } catch (error) {
+    if (error.name === "AbortError") {
+      console.warn("⏱️ ML API request timed out");
+    } else {
+      console.error("🔥 ML API fetch failed:", error.message);
+    }
+    return null;
+  }
 }
 
-function normalize(value, min, max) {
-  return (value - min) / (max - min);
-}
-
+/**
+ * =====================================================
+ * HELPERS
+ * =====================================================
+ */
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
-}
-
-function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
