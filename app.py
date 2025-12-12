@@ -4,10 +4,11 @@ import pandas as pd
 import numpy as np
 import joblib
 from xgboost import XGBRegressor
+from tensorflow.keras.models import load_model
 
 # Load artifacts
-xgb_model = XGBRegressor()
-xgb_model.load_model("/Users/gowrigalgali/Desktop/MADproject/SmartParkingSpotDetector/artifacts/run_summary.json")
+#xgb_model = XGBRegressor()
+lstm_model = load_model("artifacts/lstm_parking_demo_model.keras")
 
 scaler = joblib.load("/Users/gowrigalgali/Desktop/MADproject/SmartParkingSpotDetector/artifacts/feature_scaler.joblib")
 label_encoder = joblib.load("/Users/gowrigalgali/Desktop/MADproject/SmartParkingSpotDetector/artifacts/loc_label_encoder.joblib")
@@ -60,7 +61,7 @@ def predict(req: ParkingRequest):
     X[:, cont_idx] = scaler.transform(X[:, cont_idx])
 
     # Predict
-    pred = xgb_model.predict(X)[0]
+    pred = lstm_model.predict(X)[0]
     occupancy_percent = round(pred * 100, 2)
 
     return {
