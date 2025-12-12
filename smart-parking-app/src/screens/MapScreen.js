@@ -1,6 +1,6 @@
 // src/screens/MapScreen.js
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, Alert, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, Alert, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, TouchableOpacity, Platform } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
@@ -352,7 +352,9 @@ export default function MapScreen({ navigation }) {
         >
           {location && (
             <Marker coordinate={location} title="You are here">
-              <Ionicons name="car" size={28} color="#1e3a8a" />
+              <View style={styles.parkingMarker}>
+                <Text style={styles.parkingMarkerText}>P</Text>
+              </View>
             </Marker>
           )}
           <HeatMapLayer points={events} />
@@ -521,4 +523,25 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   toastText: { color: "#fff", fontWeight: "600" },
+  parkingMarker: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#1e3a8a",
+    borderWidth: 3,
+    borderColor: "#ffffff",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  parkingMarkerText: {
+    color: "#ffffff",
+    fontSize: 20,
+    fontWeight: "700",
+    fontFamily: Platform.OS === "ios" ? "Arial" : "sans-serif",
+  },
 });

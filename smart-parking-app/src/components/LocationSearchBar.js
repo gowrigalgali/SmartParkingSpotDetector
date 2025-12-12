@@ -140,13 +140,13 @@ export default function LocationSearchBar({ onLocationSelect, apiKey }) {
                 style={styles.resultItem}
                 onPress={() => handleSelectLocation(item)}
               >
-                <Ionicons name="location" size={18} color="#4285f4" />
+                <Ionicons name="location" size={20} color="#4285f4" />
                 <View style={styles.resultTextContainer}>
                   <Text style={styles.resultName} numberOfLines={2}>
                     {item.name}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#9aa0a6" />
+                <Ionicons name="chevron-forward" size={18} color="#9aa0a6" />
               </TouchableOpacity>
             )}
             style={styles.resultsList}
