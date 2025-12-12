@@ -110,8 +110,8 @@ export async function reportParking({
   event = "parked",
   message = "",
   test = false,
-}) 
- {
+  easeRating = null,
+}) {
   console.log("🔥 Firebase: reportParking called");
   console.log("🔥 Firebase: Parameters received:", {
     userId,
@@ -121,6 +121,11 @@ export async function reportParking({
     event,
     message,
     test,
+    easeRating,
+    rain,
+    is_event,
+    parking_duration,
+    user_purpose,
   });
 
   // Validate required fields
@@ -139,22 +144,20 @@ export async function reportParking({
 
   try {
     const documentData = {
-  userId: userId || null,
-  lat: Number(lat),
-  lon: Number(lon),
-  vehicleType: String(vehicleType),
-  event: String(event),
-  message: String(message || ""),
-
-  // NEW FIELDS YOU MUST ADD
-  rain: Number(rain),
-  is_event: Number(is_event),
-  parking_duration: Number(parking_duration),
-  user_purpose: String(user_purpose),
-
-  test: Boolean(test),
-  timestamp: serverTimestamp(),
-};
+      userId: userId || null,
+      lat: Number(lat),
+      lon: Number(lon),
+      vehicleType: String(vehicleType),
+      event: String(event),
+      message: String(message || ""),
+      rain: Number(rain || 0),
+      is_event: Number(is_event || 0),
+      parking_duration: Number(parking_duration || 30),
+      user_purpose: String(user_purpose || "shopping"),
+      easeRating: easeRating !== null && easeRating !== undefined ? Number(easeRating) : null,
+      test: Boolean(test),
+      timestamp: serverTimestamp(),
+    };
 
 
     console.log("🔥 Firebase: Document data to save:", JSON.stringify(documentData, null, 2));

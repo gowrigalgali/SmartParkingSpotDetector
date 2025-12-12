@@ -1,7 +1,7 @@
 // src/screens/MapScreen.js
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Alert, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
@@ -16,6 +16,7 @@ import LocationSearchBar from "../components/LocationSearchBar";
 export default function MapScreen({ navigation }) {
   // Expo exposes public env vars prefixed with EXPO_PUBLIC_
   const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+  const insets = useSafeAreaInsets();
 
   const mapRef = useRef(null);
   const locationWatcherRef = useRef(null);
@@ -207,10 +208,11 @@ export default function MapScreen({ navigation }) {
       rain: formData.rain,
       is_event: formData.is_event,
       parking_duration: formData.parking_duration,
-      user_purpose : formData.user_purpose,
+      user_purpose: formData.user_purpose,
       vehicleType: formData.vehicleType,
       message: formData.message,
       test: formData.test,
+      easeRating: formData.easeRating,
       event: "parked",
     };
 
@@ -306,7 +308,7 @@ export default function MapScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <View style={styles.screen}>
       <View style={styles.mapWrapper}>
         <MapView
           ref={mapRef}
@@ -316,6 +318,12 @@ export default function MapScreen({ navigation }) {
           showsUserLocation
           showsCompass={false}
           userInterfaceStyle="dark"
+          mapPadding={{
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+          }}
         >
           {location && (
             <Marker coordinate={location} title="You are here">
@@ -325,7 +333,7 @@ export default function MapScreen({ navigation }) {
           <HeatMapLayer points={events} />
         </MapView>
 
-        <View style={styles.overlayTop}>
+        <View style={[styles.overlayTop, { top: insets.top + 16 }]}>
           <View style={styles.topRow}>
             <View style={styles.searchContainer}>
               <LocationSearchBar
@@ -343,7 +351,7 @@ export default function MapScreen({ navigation }) {
         </View>
 
         <ScrollView
-          style={styles.bottomSheet}
+          style={[styles.bottomSheet, { paddingBottom: insets.bottom }]}
           contentContainerStyle={styles.bottomContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={loadRecentEvents} />
@@ -366,10 +374,12 @@ export default function MapScreen({ navigation }) {
           </View>
         </ScrollView>
 
-        <MarkParkingButton onPress={handleParking} loading={isSaving} />
+        <View style={[styles.parkingButtonContainer, { bottom: insets.bottom + 32 }]}>
+          <MarkParkingButton onPress={handleParking} loading={isSaving} />
+        </View>
 
         {toast && (
-          <View style={styles.toast}>
+          <View style={[styles.toast, { bottom: insets.bottom + 140 }]}>
             <Ionicons name="checkmark-circle" size={18} color="#fff" />
             <Text style={styles.toastText}>{toast}</Text>
           </View>
@@ -386,13 +396,23 @@ export default function MapScreen({ navigation }) {
           location={location}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#0f172a" },
-  mapWrapper: { flex: 1 },
+  screen: { 
+    flex: 1, 
+    backgroundColor: "#0f172a",
+  },
+  mapWrapper: { 
+    flex: 1,
+  },
+  parkingButtonContainer: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+  },
   center: {
     flex: 1,
     alignItems: "center",
@@ -402,7 +422,6 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 16, color: "#0f172a" },
   overlayTop: {
     position: "absolute",
-    top: 16,
     left: 20,
     right: 20,
     zIndex: 10,
@@ -460,7 +479,6 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 12, color: "#64748b" },
   toast: {
     position: "absolute",
-    bottom: 140,
     left: 40,
     right: 40,
     backgroundColor: "#0d9488",

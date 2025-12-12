@@ -18,10 +18,7 @@ export default function MarkParkingButton({ onPress, loading }) {
 
 const styles = StyleSheet.create({
   button: {
-    position: "absolute",
-    bottom: 32,
-    left: 20,
-    right: 20,
+    width: "100%",
     backgroundColor: "#2f95dc",
     padding: 16,
     borderRadius: 12,

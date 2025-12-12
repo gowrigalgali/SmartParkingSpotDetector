@@ -33,6 +33,7 @@ export default function ParkingQuestionnaire({
   const [isEvent, setIsEvent] = useState(0);
   const [parkingDuration, setParkingDuration] = useState(30);
   const [userPurpose, setUserPurpose] = useState("shopping");
+  const [easeRating, setEaseRating] = useState(null);
 
 
   // Component mount/unmount logging
@@ -71,17 +72,17 @@ export default function ParkingQuestionnaire({
   const handleSubmit = () => {
     try {
       const formData = {
-  vehicleType,
-  message: message.trim(),
-  test,
-  lat: location?.latitude,
-  lon: location?.longitude,
-
-  rain,
-  is_event: isEvent,
-  parking_duration: parkingDuration,
-  user_purpose: userPurpose,
-};
+        vehicleType,
+        message: message.trim(),
+        test,
+        lat: location?.latitude,
+        lon: location?.longitude,
+        rain,
+        is_event: isEvent,
+        parking_duration: parkingDuration,
+        user_purpose: userPurpose,
+        easeRating: easeRating !== null ? Number(easeRating) : null,
+      };
 
       console.log("📋 ParkingQuestionnaire: Submitting form data");
       console.log("📋 Form Data:", JSON.stringify(formData, null, 2));
@@ -110,6 +111,11 @@ export default function ParkingQuestionnaire({
       setMessage("");
       setVehicleType("car");
       setTest(false);
+      setEaseRating(null);
+      setRain(0);
+      setIsEvent(0);
+      setParkingDuration(30);
+      setUserPurpose("shopping");
       console.log("📋 ParkingQuestionnaire: Form reset complete");
     } catch (error) {
       console.error("❌ ParkingQuestionnaire: Error in handleSubmit");
@@ -375,7 +381,37 @@ export default function ParkingQuestionnaire({
       </Text>
     </TouchableOpacity>
   </View>
-</View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.label}>How easy was parking to find? (1-10)</Text>
+              <Text style={styles.ratingSubtext}>1 = Very difficult, 10 = Very easy</Text>
+              <View style={styles.ratingContainer}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
+                  <TouchableOpacity
+                    key={rating}
+                    style={[
+                      styles.ratingButton,
+                      easeRating === rating && styles.ratingButtonActive,
+                    ]}
+                    onPress={() => {
+                      console.log("📋 ParkingQuestionnaire: Ease rating changed to:", rating);
+                      setEaseRating(rating);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.ratingButtonText,
+                        easeRating === rating && styles.ratingButtonTextActive,
+                      ]}
+                    >
+                      {rating}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
 
             <View style={styles.section}>
               <Text style={styles.label}>Message (Optional)</Text>
@@ -536,6 +572,42 @@ const styles = StyleSheet.create({
     color: "#64748b",
   },
   vehicleButtonTextActive: {
+    color: "#fff",
+  },
+  ratingSubtext: {
+    fontSize: 13,
+    color: "#64748b",
+    marginBottom: 12,
+    marginTop: -4,
+  },
+  ratingContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  ratingButton: {
+    width: "9%",
+    minWidth: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#f1f5f9",
+    borderWidth: 2,
+    borderColor: "transparent",
+    marginBottom: 8,
+  },
+  ratingButtonActive: {
+    backgroundColor: "#2563eb",
+    borderColor: "#2563eb",
+  },
+  ratingButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#64748b",
+  },
+  ratingButtonTextActive: {
     color: "#fff",
   },
   textInput: {
