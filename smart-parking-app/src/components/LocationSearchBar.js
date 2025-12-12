@@ -8,8 +8,11 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 /**
  * Geocoding function using Google Geocoding API
@@ -102,13 +105,13 @@ export default function LocationSearchBar({ onLocationSelect, apiKey }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.wrapper}>
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#64748b" style={styles.searchIcon} />
+        <Ionicons name="search" size={22} color="#5f6368" style={styles.searchIcon} />
         <TextInput
           style={styles.input}
           placeholder="Search for a location..."
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor="#9aa0a6"
           value={searchQuery}
           onChangeText={setSearchQuery}
           onFocus={() => {
@@ -118,11 +121,11 @@ export default function LocationSearchBar({ onLocationSelect, apiKey }) {
           }}
         />
         {isSearching && (
-          <ActivityIndicator size="small" color="#2563eb" style={styles.loader} />
+          <ActivityIndicator size="small" color="#4285f4" style={styles.loader} />
         )}
         {searchQuery.length > 0 && !isSearching && (
           <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
-            <Ionicons name="close-circle" size={20} color="#64748b" />
+            <Ionicons name="close-circle" size={20} color="#9aa0a6" />
           </TouchableOpacity>
         )}
       </View>
@@ -137,13 +140,13 @@ export default function LocationSearchBar({ onLocationSelect, apiKey }) {
                 style={styles.resultItem}
                 onPress={() => handleSelectLocation(item)}
               >
-                <Ionicons name="location" size={18} color="#2563eb" />
+                <Ionicons name="location" size={18} color="#4285f4" />
                 <View style={styles.resultTextContainer}>
-                  <Text style={styles.resultName} numberOfLines={1}>
+                  <Text style={styles.resultName} numberOfLines={2}>
                     {item.name}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+                <Ionicons name="chevron-forward" size={16} color="#9aa0a6" />
               </TouchableOpacity>
             )}
             style={styles.resultsList}
@@ -155,7 +158,7 @@ export default function LocationSearchBar({ onLocationSelect, apiKey }) {
       {showResults && results.length === 0 && searchQuery.length > 0 && !isSearching && (
         <View style={styles.resultsContainer}>
           <View style={styles.noResults}>
-            <Ionicons name="location-outline" size={24} color="#94a3b8" />
+            <Ionicons name="location-outline" size={24} color="#9aa0a6" />
             <Text style={styles.noResultsText}>No locations found</Text>
           </View>
         </View>
@@ -165,7 +168,7 @@ export default function LocationSearchBar({ onLocationSelect, apiKey }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     position: "relative",
     zIndex: 10,
   },
@@ -173,23 +176,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#ffffff",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+    minHeight: 48,
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 12,
+    opacity: 0.6,
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: "#0f172a",
+    color: "#202124",
     padding: 0,
+    fontWeight: "400",
   },
   loader: {
     marginLeft: 8,
@@ -197,47 +203,61 @@ const styles = StyleSheet.create({
   clearButton: {
     marginLeft: 8,
     padding: 4,
+    borderRadius: 12,
   },
   resultsContainer: {
-    marginTop: 8,
+    position: "absolute",
+    top: 56,
+    left: -20,
+    width: SCREEN_WIDTH,
     backgroundColor: "#ffffff",
-    borderRadius: 12,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-    maxHeight: 200,
+    shadowRadius: 12,
+    elevation: 6,
+    maxHeight: 400,
     overflow: "hidden",
+    borderWidth: 0.5,
+    borderColor: "rgba(0, 0, 0, 0.08)",
+    zIndex: 1000,
   },
   resultsList: {
-    maxHeight: 200,
+    maxHeight: 400,
   },
   resultItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "rgba(0, 0, 0, 0.08)",
   },
   resultTextContainer: {
     flex: 1,
     marginLeft: 12,
   },
   resultName: {
-    fontSize: 15,
-    color: "#0f172a",
-    fontWeight: "500",
+    fontSize: 14,
+    color: "#202124",
+    fontWeight: "400",
+    letterSpacing: 0,
+    lineHeight: 20,
   },
   noResults: {
-    padding: 20,
+    padding: 24,
     alignItems: "center",
     justifyContent: "center",
   },
   noResultsText: {
     marginTop: 8,
     fontSize: 14,
-    color: "#94a3b8",
+    color: "#5f6368",
+    fontWeight: "400",
   },
 });
 

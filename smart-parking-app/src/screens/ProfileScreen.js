@@ -1,23 +1,59 @@
 // src/screens/ProfileScreen.js
-import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar, Button, Card, Divider } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
-import { auth, signOutUser } from "../firebase/firebase";
-
-const history = [
-  { id: "1", title: "Indiranagar 12th Main", time: "Today • 37 min" },
-  { id: "2", title: "Church Street", time: "Yesterday • 58 min" },
-  { id: "3", title: "UB City Block C", time: "Sunday • 1h 12m" },
-];
+import { auth, signOutUser, getTotalParkingEventsCount, getUserParkingEventsCount, getUserParkingHistory } from "../firebase/firebase";
 
 export default function ProfileScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
+  const [driverScore, setDriverScore] = useState(0);
+  const [userContributions, setUserContributions] = useState(0);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [history, setHistory] = useState([]);
+  
   const user = auth.currentUser;
+  const userId = user?.uid || user?.email || null;
   const userEmail = user?.email || "User";
   const displayName = userEmail.split("@")[0] || "User";
   const initials = displayName.substring(0, 2).toUpperCase();
+
+  useEffect(() => {
+    loadProfileData();
+  }, [userId]);
+
+  const loadProfileData = async () => {
+    if (!userId) {
+      setLoadingData(false);
+      return;
+    }
+
+    try {
+      setLoadingData(true);
+      
+      // Fetch data in parallel
+      const [totalCount, userCount, userHistory] = await Promise.all([
+        getTotalParkingEventsCount(),
+        getUserParkingEventsCount(userId),
+        getUserParkingHistory(userId, 50),
+      ]);
+
+      setTotalRecords(totalCount);
+      setUserContributions(userCount);
+      
+      // Calculate driver score: (user contributions / total records) * 100
+      const score = totalCount > 0 ? Math.round((userCount / totalCount) * 100) : 0;
+      setDriverScore(score);
+      
+      setHistory(userHistory);
+    } catch (error) {
+      console.error("Error loading profile data:", error);
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const handleLogout = async () => {
     Alert.alert(
@@ -72,41 +108,74 @@ export default function ProfileScreen({ navigation }) {
       <Card mode="elevated" style={styles.card}>
         <Card.Title title="Drive score" subtitle="Community impact" />
         <Card.Content>
-          <Text style={styles.score}>82</Text>
-          <Text style={styles.scoreCaption}>
-            Keep sharing spots to unlock pro mapping tools.
-          </Text>
-          <View style={styles.badges}>
-            <Badge icon="sparkles-outline" label="Top guide" />
-            <Badge icon="flame-outline" label="Heatmap hero" />
-            <Badge icon="shield-checkmark-outline" label="Trusted" />
-          </View>
+          {loadingData ? (
+            <ActivityIndicator size="large" color="#2563eb" style={styles.loader} />
+          ) : (
+            <>
+              <Text style={styles.score}>{driverScore}%</Text>
+              <Text style={styles.scoreCaption}>
+                {userContributions} of {totalRecords} total contributions
+              </Text>
+              {userContributions === 0 && (
+                <Text style={styles.scoreHint}>
+                  Start contributing by marking parking spots to increase your score!
+                </Text>
+              )}
+            </>
+          )}
         </Card.Content>
       </Card>
 
       <View style={styles.listHeader}>
         <Text style={styles.listTitle}>Recent drops</Text>
-        <Button compact mode="text">
-          View all
-        </Button>
+        {history.length > 0 && (
+          <Text style={styles.listCount}>{history.length} {history.length === 1 ? "spot" : "spots"}</Text>
+        )}
       </View>
 
-      <FlatList
-        data={history}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.listItem}>
-            <Ionicons name="location-outline" size={20} color="#2563eb" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.listItemTitle}>{item.title}</Text>
-              <Text style={styles.listItemTime}>{item.time}</Text>
+      {loadingData ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563eb" />
+        </View>
+      ) : history.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="location-outline" size={48} color="#cbd5e1" />
+          <Text style={styles.emptyText}>No parking spots marked yet</Text>
+          <Text style={styles.emptySubtext}>Start contributing to the community!</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={history}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.listItem}>
+              <Ionicons 
+                name={item.vehicleType === "motorcycle" ? "bicycle" : item.vehicleType === "truck" ? "car-sport" : "car"} 
+                size={20} 
+                color="#2563eb" 
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.listItemTitle}>
+                  {item.lat?.toFixed(4)}, {item.lon?.toFixed(4)}
+                </Text>
+                <View style={styles.listItemMeta}>
+                  <Text style={styles.listItemTime}>{item.timestamp_readable}</Text>
+                  {item.vehicleType && (
+                    <Text style={styles.listItemVehicle}> • {item.vehicleType}</Text>
+                  )}
+                </View>
+                {item.message && (
+                  <Text style={styles.listItemMessage} numberOfLines={1}>
+                    {item.message}
+                  </Text>
+                )}
+              </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#94a3b8" />
-          </View>
-        )}
-        contentContainerStyle={{ gap: 10, paddingBottom: 20 }}
-        showsVerticalScrollIndicator={false}
-      />
+          )}
+          contentContainerStyle={{ gap: 10, paddingBottom: 20 }}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       <Divider style={styles.divider} />
 
@@ -128,14 +197,6 @@ export default function ProfileScreen({ navigation }) {
   );
 }
 
-function Badge({ icon, label }) {
-  return (
-    <View style={styles.badge}>
-      <Ionicons name={icon} size={16} color="#2563eb" />
-      <Text style={styles.badgeText}>{label}</Text>
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   screen: {
@@ -187,26 +248,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#0f172a",
   },
-  scoreCaption: { color: "#475569", marginTop: 4 },
-  badges: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 16,
+  scoreCaption: { color: "#475569", marginTop: 4, fontSize: 14 },
+  scoreHint: {
+    color: "#64748b",
+    fontSize: 13,
+    marginTop: 8,
+    fontStyle: "italic",
   },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "#e0e7ff",
-  },
-  badgeText: {
-    color: "#1e3a8a",
-    fontSize: 12,
-    fontWeight: "600",
+  loader: {
+    paddingVertical: 20,
   },
   listHeader: {
     flexDirection: "row",
@@ -220,6 +270,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#0f172a",
   },
+  listCount: {
+    fontSize: 14,
+    color: "#64748b",
+    fontWeight: "500",
+  },
   listItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -230,8 +285,52 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     marginBottom: 10,
   },
-  listItemTitle: { fontWeight: "600", color: "#0f172a" },
-  listItemTime: { color: "#94a3b8" },
+  listItemTitle: { 
+    fontWeight: "600", 
+    color: "#0f172a",
+    fontSize: 15,
+    marginBottom: 4,
+  },
+  listItemMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  listItemTime: { 
+    color: "#94a3b8",
+    fontSize: 13,
+  },
+  listItemVehicle: {
+    color: "#64748b",
+    fontSize: 13,
+    textTransform: "capitalize",
+  },
+  listItemMessage: {
+    color: "#94a3b8",
+    fontSize: 12,
+    marginTop: 4,
+    fontStyle: "italic",
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#64748b",
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#94a3b8",
+    marginTop: 8,
+  },
   divider: {
     marginVertical: 24,
     marginHorizontal: 24,

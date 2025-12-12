@@ -337,7 +337,7 @@ export default function MapScreen({ navigation }) {
               style={styles.profileButton}
               onPress={() => navigation.navigate("Profile")}
             >
-              <Ionicons name="person-circle-outline" size={32} color="#fff" />
+              <Ionicons name="person" size={24} color="#ffffff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -414,11 +414,20 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     flex: 1,
+    alignSelf: "stretch",
   },
   profileButton: {
-    padding: 8,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#4285f4",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   bottomSheet: {
     position: "absolute",

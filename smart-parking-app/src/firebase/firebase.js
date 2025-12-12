@@ -304,3 +304,135 @@ export async function viewAllParkingEvents(limitCount = 100) {
     return [];
   }
 }
+
+// -----------------------------------------------------
+// GET TOTAL PARKING EVENTS COUNT
+// -----------------------------------------------------
+export async function getTotalParkingEventsCount() {
+  try {
+    const q = query(collection(db, "parking_events"));
+    const snap = await getDocs(q);
+    return snap.size;
+  } catch (err) {
+    console.error("❌ Error fetching total count:", err);
+    return 0;
+  }
+}
+
+// -----------------------------------------------------
+// GET USER'S PARKING EVENTS COUNT
+// -----------------------------------------------------
+export async function getUserParkingEventsCount(userId) {
+  try {
+    if (!userId) return 0;
+    
+    const q = query(
+      collection(db, "parking_events"),
+      orderBy("timestamp", "desc")
+    );
+    const snap = await getDocs(q);
+    
+    let count = 0;
+    snap.forEach((doc) => {
+      const data = doc.data();
+      if (data.userId === userId) {
+        count++;
+      }
+    });
+    
+    return count;
+  } catch (err) {
+    console.error("❌ Error fetching user count:", err);
+    return 0;
+  }
+}
+
+// -----------------------------------------------------
+// GET USER'S PARKING HISTORY
+// -----------------------------------------------------
+export async function getUserParkingHistory(userId, limitCount = 50) {
+  try {
+    if (!userId) return [];
+    
+    const q = query(
+      collection(db, "parking_events"),
+      orderBy("timestamp", "desc"),
+      limit(limitCount)
+    );
+    const snap = await getDocs(q);
+    
+    const events = [];
+    snap.forEach((doc) => {
+      const data = doc.data();
+      if (data.userId === userId) {
+        let timestamp;
+        if (data.timestamp && typeof data.timestamp.toDate === "function") {
+          timestamp = data.timestamp.toDate();
+        } else if (data.timestamp instanceof Date) {
+          timestamp = data.timestamp;
+        } else {
+          timestamp = new Date();
+        }
+        
+        events.push({
+          id: doc.id,
+          lat: data.lat,
+          lon: data.lon,
+          vehicleType: data.vehicleType || "car",
+          message: data.message || "",
+          timestamp: timestamp,
+          timestamp_readable: formatTimestamp(timestamp),
+        });
+      }
+    });
+    
+    return events;
+  } catch (err) {
+    console.error("❌ Error fetching user history:", err);
+    return [];
+  }
+}
+
+// -----------------------------------------------------
+// FORMAT TIMESTAMP FOR DISPLAY
+// -----------------------------------------------------
+function formatTimestamp(timestamp) {
+  if (!timestamp) return "Unknown";
+  
+  let date;
+  if (timestamp instanceof Date) {
+    date = timestamp;
+  } else if (timestamp && typeof timestamp.toDate === "function") {
+    date = timestamp.toDate();
+  } else {
+    date = new Date(timestamp);
+  }
+  
+  if (isNaN(date.getTime())) {
+    return "Unknown";
+  }
+  
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) {
+    return "Just now";
+  } else if (diffMins < 60) {
+    return `${diffMins} min ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+  } else if (diffDays === 1) {
+    return "Yesterday";
+  } else if (diffDays < 7) {
+    return `${diffDays} days ago`;
+  } else {
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+    });
+  }
+}
