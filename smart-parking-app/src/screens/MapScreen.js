@@ -1,5 +1,5 @@
 // src/screens/MapScreen.js
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Alert, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
@@ -12,6 +12,10 @@ import MarkParkingButton from "../components/MarkParkingButton";
 import PredictionModel from "../components/PredictionModel";
 
 export default function MapScreen({ navigation }) {
+  // Expo exposes public env vars prefixed with EXPO_PUBLIC_
+  const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+
+  const mapRef = useRef(null);
   const [location, setLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -25,9 +29,10 @@ export default function MapScreen({ navigation }) {
   // 1. Get user location
   // ---------------------------------------------------
   useEffect(() => {
+    let subscription;
     (async () => {
       setLoadingLocation(true);
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
 
       if (status !== "granted") {
         Alert.alert("Permission Denied", "Please enable location access.");
@@ -35,12 +40,34 @@ export default function MapScreen({ navigation }) {
         return;
       }
 
-      let pos = await Location.getCurrentPositionAsync({});
+      // Initial position
+      const pos = await Location.getCurrentPositionAsync({});
       setLocation(pos.coords);
-
-      console.log("📍 User Location:", pos.coords);
       setLoadingLocation(false);
+
+      // Live updates as user moves
+      subscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          distanceInterval: 5, // meters
+          timeInterval: 5000, // ms
+        },
+        (loc) => {
+          setLocation(loc.coords);
+          mapRef.current?.animateCamera({
+            center: {
+              latitude: loc.coords.latitude,
+              longitude: loc.coords.longitude,
+            },
+            zoom: 16,
+          });
+        }
+      );
     })();
+
+    return () => {
+      subscription?.remove();
+    };
   }, []);
 
   useEffect(() => {
@@ -174,9 +201,9 @@ export default function MapScreen({ navigation }) {
     <SafeAreaView style={styles.screen}>
       <View style={styles.mapWrapper}>
         <MapView
+          ref={mapRef}
           provider={PROVIDER_GOOGLE}
           style={StyleSheet.absoluteFill}
-          initialRegion={region}
           region={region}
           showsUserLocation
           showsCompass={false}
