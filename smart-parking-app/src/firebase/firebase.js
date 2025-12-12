@@ -1,6 +1,3 @@
-// ------------------------------
-// Firebase Setup
-// ------------------------------
 import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getFirestore,
@@ -38,14 +35,8 @@ const firebaseConfig = {
 };
 
 
-// ------------------------------
-// Initialize App (Safe Singleton)
-// ------------------------------
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// ------------------------------
-// Firestore (Special initialization for React Native/iOS)
-// ------------------------------
 let firestoreInstance = globalThis.__FIRESTORE__;
 
 // ensure only 1 instance
@@ -63,9 +54,6 @@ if (!firestoreInstance) {
 
 export const db = firestoreInstance;
 
-// ------------------------------
-// Auth Initialization
-// ------------------------------
 let authInstance = globalThis.__AUTH__;
 
 if (!authInstance) {
@@ -110,19 +98,20 @@ export async function signIn(email, password) {
   );
   return userCredential.user;
 }
-
-// -----------------------------------------------------
-// REPORT PARKING EVENT
-// -----------------------------------------------------
 export async function reportParking({
   userId,
   lat,
   lon,
+  rain,
+  is_event,
+  parking_duration,
+  user_purpose,
   vehicleType,
   event = "parked",
   message = "",
   test = false,
-}) {
+}) 
+ {
   console.log("🔥 Firebase: reportParking called");
   console.log("🔥 Firebase: Parameters received:", {
     userId,
@@ -150,15 +139,23 @@ export async function reportParking({
 
   try {
     const documentData = {
-      userId: userId || null,
-      lat: Number(lat),
-      lon: Number(lon),
-      vehicleType: String(vehicleType),
-      event: String(event),
-      message: String(message || ""),
-      test: Boolean(test),
-      timestamp: serverTimestamp(),
-    };
+  userId: userId || null,
+  lat: Number(lat),
+  lon: Number(lon),
+  vehicleType: String(vehicleType),
+  event: String(event),
+  message: String(message || ""),
+
+  // NEW FIELDS YOU MUST ADD
+  rain: Number(rain),
+  is_event: Number(is_event),
+  parking_duration: Number(parking_duration),
+  user_purpose: String(user_purpose),
+
+  test: Boolean(test),
+  timestamp: serverTimestamp(),
+};
+
 
     console.log("🔥 Firebase: Document data to save:", JSON.stringify(documentData, null, 2));
     console.log("🔥 Firebase: Attempting to add document to 'parking_events' collection...");

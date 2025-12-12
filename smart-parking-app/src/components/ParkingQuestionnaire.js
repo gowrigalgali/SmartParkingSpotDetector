@@ -29,6 +29,11 @@ export default function ParkingQuestionnaire({
   const [message, setMessage] = useState("");
   const [test, setTest] = useState(false);
   const [slideAnim] = useState(new Animated.Value(0));
+  const [rain, setRain] = useState(0);
+  const [isEvent, setIsEvent] = useState(0);
+  const [parkingDuration, setParkingDuration] = useState(30);
+  const [userPurpose, setUserPurpose] = useState("shopping");
+
 
   // Component mount/unmount logging
   React.useEffect(() => {
@@ -66,12 +71,17 @@ export default function ParkingQuestionnaire({
   const handleSubmit = () => {
     try {
       const formData = {
-        vehicleType,
-        message: message.trim(),
-        test,
-        lat: location?.latitude,
-        lon: location?.longitude,
-      };
+  vehicleType,
+  message: message.trim(),
+  test,
+  lat: location?.latitude,
+  lon: location?.longitude,
+
+  rain,
+  is_event: isEvent,
+  parking_duration: parkingDuration,
+  user_purpose: userPurpose,
+};
 
       console.log("📋 ParkingQuestionnaire: Submitting form data");
       console.log("📋 Form Data:", JSON.stringify(formData, null, 2));
@@ -256,6 +266,116 @@ export default function ParkingQuestionnaire({
                 </TouchableOpacity>
               </View>
             </View>
+                    <View style={styles.section}>
+  <Text style={styles.label}>Is it raining?</Text>
+
+  <View style={styles.vehicleTypeContainer}>
+    <TouchableOpacity
+      style={[styles.vehicleButton, rain === 0 && styles.vehicleButtonActive]}
+      onPress={() => setRain(0)}
+    >
+      <Text style={[styles.vehicleButtonText, rain === 0 && styles.vehicleButtonTextActive]}>
+        No
+      </Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={[styles.vehicleButton, rain === 1 && styles.vehicleButtonActive]}
+      onPress={() => setRain(1)}
+    >
+      <Text style={[styles.vehicleButtonText, rain === 1 && styles.vehicleButtonTextActive]}>
+        Yes
+      </Text>
+    </TouchableOpacity>
+  </View>
+</View>
+<View style={styles.section}>
+  <Text style={styles.label}>Nearby Event</Text>
+
+  <View style={styles.vehicleTypeContainer}>
+    <TouchableOpacity
+      style={[styles.vehicleButton, isEvent === 0 && styles.vehicleButtonActive]}
+      onPress={() => setIsEvent(0)}
+    >
+      <Text style={[styles.vehicleButtonText, isEvent === 0 && styles.vehicleButtonTextActive]}>
+        No
+      </Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={[styles.vehicleButton, isEvent === 1 && styles.vehicleButtonActive]}
+      onPress={() => setIsEvent(1)}
+    >
+      <Text style={[styles.vehicleButtonText, isEvent === 1 && styles.vehicleButtonTextActive]}>
+        Yes
+      </Text>
+    </TouchableOpacity>
+  </View>
+</View>
+<View style={styles.section}>
+  <Text style={styles.label}>Parking Duration</Text>
+
+  <View style={styles.vehicleTypeContainer}>
+    <TouchableOpacity
+      style={[styles.vehicleButton, parkingDuration === 15 && styles.vehicleButtonActive]}
+      onPress={() => setParkingDuration(15)}
+    >
+      <Text style={[styles.vehicleButtonText, parkingDuration === 15 && styles.vehicleButtonTextActive]}>
+        15 min
+      </Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={[styles.vehicleButton, parkingDuration === 30 && styles.vehicleButtonActive]}
+      onPress={() => setParkingDuration(30)}
+    >
+      <Text style={[styles.vehicleButtonText, parkingDuration === 30 && styles.vehicleButtonTextActive]}>
+        30 min
+      </Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={[styles.vehicleButton, parkingDuration === 60 && styles.vehicleButtonActive]}
+      onPress={() => setParkingDuration(60)}
+    >
+      <Text style={[styles.vehicleButtonText, parkingDuration === 60 && styles.vehicleButtonTextActive]}>
+        1 hr
+      </Text>
+    </TouchableOpacity>
+  </View>
+</View>
+<View style={styles.section}>
+  <Text style={styles.label}>Purpose of Visit</Text>
+
+  <View style={styles.vehicleTypeContainer}>
+    <TouchableOpacity
+      style={[styles.vehicleButton, userPurpose === "shopping" && styles.vehicleButtonActive]}
+      onPress={() => setUserPurpose("shopping")}
+    >
+      <Text style={[styles.vehicleButtonText, userPurpose === "shopping" && styles.vehicleButtonTextActive]}>
+        Shopping
+      </Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={[styles.vehicleButton, userPurpose === "work" && styles.vehicleButtonActive]}
+      onPress={() => setUserPurpose("work")}
+    >
+      <Text style={[styles.vehicleButtonText, userPurpose === "work" && styles.vehicleButtonTextActive]}>
+        Work
+      </Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={[styles.vehicleButton, userPurpose === "travel" && styles.vehicleButtonActive]}
+      onPress={() => setUserPurpose("travel")}
+    >
+      <Text style={[styles.vehicleButtonText, userPurpose === "travel" && styles.vehicleButtonTextActive]}>
+        Travel
+      </Text>
+    </TouchableOpacity>
+  </View>
+</View>
 
             <View style={styles.section}>
               <Text style={styles.label}>Message (Optional)</Text>
