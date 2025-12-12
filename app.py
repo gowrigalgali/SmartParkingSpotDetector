@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import pandas as pd
 import numpy as np
 import joblib
-from xgboost import XGBRegressor
+# from xgboost import XGBRegressor
 from tensorflow.keras.models import load_model
 
 # Load artifacts

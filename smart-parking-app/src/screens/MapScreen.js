@@ -11,12 +11,15 @@ import HeatMapLayer from "../components/HeatMapLayer";
 import MarkParkingButton from "../components/MarkParkingButton";
 import PredictionModel from "../components/PredictionModel";
 import ParkingQuestionnaire from "../components/ParkingQuestionnaire";
+import LocationSearchBar from "../components/LocationSearchBar";
 
 export default function MapScreen({ navigation }) {
   // Expo exposes public env vars prefixed with EXPO_PUBLIC_
   const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
   const mapRef = useRef(null);
+  const locationWatcherRef = useRef(null);
+  const isSearchedLocationRef = useRef(false);
   const [location, setLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -47,7 +50,7 @@ export default function MapScreen({ navigation }) {
       setLocation(pos.coords);
       setLoadingLocation(false);
 
-      // Live updates as user moves
+      // Live updates as user moves (only if not using searched location)
       subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,
@@ -55,16 +58,20 @@ export default function MapScreen({ navigation }) {
           timeInterval: 5000, // ms
         },
         (loc) => {
-          setLocation(loc.coords);
-          mapRef.current?.animateCamera({
-            center: {
-              latitude: loc.coords.latitude,
-              longitude: loc.coords.longitude,
-            },
-            zoom: 16,
-          });
+          // Only update location if user hasn't searched for a location
+          if (!isSearchedLocationRef.current) {
+            setLocation(loc.coords);
+            mapRef.current?.animateCamera({
+              center: {
+                latitude: loc.coords.latitude,
+                longitude: loc.coords.longitude,
+              },
+              zoom: 16,
+            });
+          }
         }
       );
+      locationWatcherRef.current = subscription;
     })();
 
     return () => {
@@ -115,7 +122,56 @@ export default function MapScreen({ navigation }) {
   }, [location]);
 
   // ---------------------------------------------------
-  // 2. Show questionnaire when parking button is clicked
+  // 2. Handle location search
+  // ---------------------------------------------------
+  const handleLocationSearch = async (selectedLocation) => {
+    console.log("🗺️ MapScreen: Location searched:", selectedLocation);
+    isSearchedLocationRef.current = true;
+    setLocation(selectedLocation);
+    
+    // Animate map to searched location
+    mapRef.current?.animateToRegion(
+      {
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      },
+      1000
+    );
+
+    // Load events and predictions for searched location
+    setRefreshing(true);
+    setFetchingPredictions(true);
+    
+    try {
+      // Load events for searched location
+      const bbox = {
+        minLat: selectedLocation.latitude - 0.02,
+        maxLat: selectedLocation.latitude + 0.02,
+        minLon: selectedLocation.longitude - 0.02,
+        maxLon: selectedLocation.longitude + 0.02,
+      };
+      const rows = await fetchRecentEvents(bbox);
+      setEvents(rows);
+      setRefreshing(false);
+
+      // Load predictions for searched location
+      const data = await fetchParkingPrediction({
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
+      });
+      setPredictions(data);
+      setFetchingPredictions(false);
+    } catch (error) {
+      console.log("Error loading data for searched location:", error);
+      setRefreshing(false);
+      setFetchingPredictions(false);
+    }
+  };
+
+  // ---------------------------------------------------
+  // 3. Show questionnaire when parking button is clicked
   // ---------------------------------------------------
   const handleParking = () => {
     console.log("🗺️ MapScreen: 'I Parked Here' button clicked");
@@ -132,7 +188,7 @@ export default function MapScreen({ navigation }) {
   };
 
   // ---------------------------------------------------
-  // 3. Submit parking data from questionnaire
+  // 4. Submit parking data from questionnaire
   // ---------------------------------------------------
   const handleSubmitParking = async (formData) => {
     console.log("🗺️ MapScreen: handleSubmitParking called");
@@ -271,9 +327,11 @@ export default function MapScreen({ navigation }) {
 
         <View style={styles.overlayTop}>
           <View style={styles.topRow}>
-            <View style={styles.greetingContainer}>
-              <Text style={styles.greeting}>Welcome back 👋</Text>
-              <Text style={styles.subGreeting}>Let's find a nearby spot.</Text>
+            <View style={styles.searchContainer}>
+              <LocationSearchBar
+                onLocationSelect={handleLocationSearch}
+                apiKey={googleMapsApiKey}
+              />
             </View>
             <TouchableOpacity
               style={styles.profileButton}
@@ -347,25 +405,21 @@ const styles = StyleSheet.create({
     top: 16,
     left: 20,
     right: 20,
-    zIndex: 1,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: "rgba(15,23,42,0.72)",
+    zIndex: 10,
   },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 12,
   },
-  greetingContainer: {
+  searchContainer: {
     flex: 1,
   },
   profileButton: {
-    padding: 4,
+    padding: 8,
     borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
   },
-  greeting: { color: "#e0e7ff", fontSize: 18, fontWeight: "600" },
-  subGreeting: { color: "#94a3b8", marginTop: 4 },
   bottomSheet: {
     position: "absolute",
     left: 0,
