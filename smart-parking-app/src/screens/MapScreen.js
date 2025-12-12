@@ -30,6 +30,7 @@ export default function MapScreen({ navigation }) {
   const [fetchingPredictions, setFetchingPredictions] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [mapRegion, setMapRegion] = useState(null);
 
   // ---------------------------------------------------
   // 1. Get user location
@@ -49,25 +50,40 @@ export default function MapScreen({ navigation }) {
       // Initial position
       const pos = await Location.getCurrentPositionAsync({});
       setLocation(pos.coords);
+      setMapRegion({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      });
       setLoadingLocation(false);
 
       // Live updates as user moves (only if not using searched location)
       subscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,
-          distanceInterval: 5, // meters
-          timeInterval: 5000, // ms
+          accuracy: Location.Accuracy.Balanced,
+          distanceInterval: 50, // meters - less frequent updates
+          timeInterval: 10000, // ms - less frequent updates
         },
         (loc) => {
           // Only update location if user hasn't searched for a location
           if (!isSearchedLocationRef.current) {
             setLocation(loc.coords);
-            mapRef.current?.animateCamera({
-              center: {
+            // Update map region but don't force camera - allows user to zoom/pan freely
+            setMapRegion((prev) => {
+              if (prev) {
+                return {
+                  ...prev,
+                  latitude: loc.coords.latitude,
+                  longitude: loc.coords.longitude,
+                };
+              }
+              return {
                 latitude: loc.coords.latitude,
                 longitude: loc.coords.longitude,
-              },
-              zoom: 16,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              };
             });
           }
         }
@@ -130,16 +146,17 @@ export default function MapScreen({ navigation }) {
     isSearchedLocationRef.current = true;
     setLocation(selectedLocation);
     
+    // Update map region state
+    const newRegion = {
+      latitude: selectedLocation.latitude,
+      longitude: selectedLocation.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    };
+    setMapRegion(newRegion);
+    
     // Animate map to searched location
-    mapRef.current?.animateToRegion(
-      {
-        latitude: selectedLocation.latitude,
-        longitude: selectedLocation.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      },
-      1000
-    );
+    mapRef.current?.animateToRegion(newRegion, 1000);
 
     // Load events and predictions for searched location
     setRefreshing(true);
@@ -300,12 +317,12 @@ export default function MapScreen({ navigation }) {
     );
   }
 
-  const region = {
+  const initialRegion = mapRegion || (location ? {
     latitude: location.latitude,
     longitude: location.longitude,
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
-  };
+  } : null);
 
   return (
     <View style={styles.screen}>
@@ -314,15 +331,23 @@ export default function MapScreen({ navigation }) {
           ref={mapRef}
           provider={PROVIDER_GOOGLE}
           style={StyleSheet.absoluteFill}
-          region={region}
+          initialRegion={initialRegion}
           showsUserLocation
           showsCompass={false}
           userInterfaceStyle="dark"
+          zoomEnabled={true}
+          scrollEnabled={true}
+          pitchEnabled={true}
+          rotateEnabled={true}
           mapPadding={{
             top: 0,
             right: 0,
             bottom: 0,
             left: 0,
+          }}
+          onRegionChangeComplete={(region) => {
+            // Update map region when user interacts, but don't force it
+            setMapRegion(region);
           }}
         >
           {location && (
