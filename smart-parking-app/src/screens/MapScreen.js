@@ -5,11 +5,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
-import { fetchRecentEvents, reportParking, viewAllParkingEvents } from "../firebase/firebase";
+import { fetchRecentEvents, reportParking, viewAllParkingEvents, auth } from "../firebase/firebase";
 import { fetchParkingPrediction } from "../api/mlApi";
 import HeatMapLayer from "../components/HeatMapLayer";
 import MarkParkingButton from "../components/MarkParkingButton";
 import PredictionModel from "../components/PredictionModel";
+import ParkingQuestionnaire from "../components/ParkingQuestionnaire";
 
 export default function MapScreen({ navigation }) {
   // Expo exposes public env vars prefixed with EXPO_PUBLIC_
@@ -24,6 +25,7 @@ export default function MapScreen({ navigation }) {
   const [predictions, setPredictions] = useState(null);
   const [fetchingPredictions, setFetchingPredictions] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
 
   // ---------------------------------------------------
   // 1. Get user location
@@ -113,38 +115,84 @@ export default function MapScreen({ navigation }) {
   }, [location]);
 
   // ---------------------------------------------------
-  // 2. Save parking location to Firebase
+  // 2. Show questionnaire when parking button is clicked
   // ---------------------------------------------------
-  const handleParking = async () => {
+  const handleParking = () => {
+    console.log("🗺️ MapScreen: 'I Parked Here' button clicked");
+    console.log("🗺️ MapScreen: Current location:", location);
+    
     if (!location) {
+      console.error("❌ MapScreen: Location not available");
       Alert.alert("Error", "Location not ready yet.");
-      console.log("❌ Location not available");
+      return;
+    }
+    
+    console.log("🗺️ MapScreen: Opening questionnaire modal");
+    setShowQuestionnaire(true);
+  };
+
+  // ---------------------------------------------------
+  // 3. Submit parking data from questionnaire
+  // ---------------------------------------------------
+  const handleSubmitParking = async (formData) => {
+    console.log("🗺️ MapScreen: handleSubmitParking called");
+    console.log("🗺️ MapScreen: Received form data:", JSON.stringify(formData, null, 2));
+    
+    setIsSaving(true);
+    setShowQuestionnaire(false);
+
+    const userId = auth.currentUser?.uid || auth.currentUser?.email || "anonymous";
+    console.log("🗺️ MapScreen: User ID:", userId);
+
+    const payload = {
+      userId,
+      lat: formData.lat,
+      lon: formData.lon,
+      vehicleType: formData.vehicleType,
+      message: formData.message,
+      test: formData.test,
+      event: "parked",
+    };
+
+    console.log("🗺️ MapScreen: Payload to send to Firebase:", JSON.stringify(payload, null, 2));
+
+    // Validate payload
+    if (!payload.lat || !payload.lon) {
+      console.error("❌ MapScreen: Missing lat/lon in payload!");
+      Alert.alert("Error", "Location data is missing.");
+      setIsSaving(false);
       return;
     }
 
-    setIsSaving(true);
-
-    const payload = {
-      lat: location.latitude,
-      lon: location.longitude,
-      vehicleType: "car",
-    };
+    if (!payload.vehicleType) {
+      console.error("❌ MapScreen: Missing vehicleType in payload!");
+      Alert.alert("Error", "Vehicle type is required.");
+      setIsSaving(false);
+      return;
+    }
 
     try {
+      console.log("🗺️ MapScreen: Calling reportParking...");
       const res = await reportParking(payload);
+      console.log("🗺️ MapScreen: reportParking response:", JSON.stringify(res, null, 2));
+      
       if (!res?.success) {
         throw new Error(res?.error || "Unable to save spot");
       }
 
-      console.log("✅ Parking saved:", res.id);
+      console.log("✅ MapScreen: Parking saved successfully with ID:", res.id);
       setToast("Saved spot – thank you for contributing!");
       setEvents((prev) => [{ ...payload, id: res.id || Date.now() }, ...prev]);
       setTimeout(() => setToast(null), 3000);
       loadRecentEvents();
     } catch (err) {
-      console.error("🔥 Firebase error:", err);
+      console.error("🔥 MapScreen: Firebase error occurred");
+      console.error("🔥 MapScreen: Error details:", err);
+      console.error("🔥 MapScreen: Error message:", err.message);
+      console.error("🔥 MapScreen: Error stack:", err.stack);
       Alert.alert("Unable to mark parking spot", err.message);
     } finally {
+      console.log("🗺️ MapScreen: Setting isSaving to false");
       setIsSaving(false);
     }
   };
@@ -219,12 +267,6 @@ export default function MapScreen({ navigation }) {
 
         <View style={styles.overlayTop}>
           <View style={styles.topRow}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.navigate("Welcome")}
-            >
-              <Ionicons name="arrow-back" size={24} color="#fff" />
-            </TouchableOpacity>
             <View style={styles.greetingContainer}>
               <Text style={styles.greeting}>Welcome back 👋</Text>
               <Text style={styles.subGreeting}>Let's find a nearby spot.</Text>
@@ -270,6 +312,17 @@ export default function MapScreen({ navigation }) {
             <Text style={styles.toastText}>{toast}</Text>
           </View>
         )}
+
+        <ParkingQuestionnaire
+          visible={showQuestionnaire}
+          onClose={() => {
+            console.log("🗺️ MapScreen: Questionnaire close requested");
+            setShowQuestionnaire(false);
+          }}
+          onSubmit={handleSubmitParking}
+          loading={isSaving}
+          location={location}
+        />
       </View>
     </SafeAreaView>
   );
@@ -299,12 +352,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-  },
-  backButton: {
-    padding: 8,
-    backgroundColor: "rgba(30, 41, 59, 0.8)",
-    borderRadius: 20,
-    marginRight: 12,
   },
   greetingContainer: {
     flex: 1,

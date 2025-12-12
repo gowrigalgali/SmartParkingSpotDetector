@@ -120,21 +120,62 @@ export async function reportParking({
   lon,
   vehicleType,
   event = "parked",
+  message = "",
+  test = false,
 }) {
-  try {
-    const docRef = await addDoc(collection(db, "parking_events"), {
-      userId: userId || null,
-      lat,
-      lon,
-      vehicleType,
-      event,
-      timestamp: serverTimestamp(),
-    });
+  console.log("🔥 Firebase: reportParking called");
+  console.log("🔥 Firebase: Parameters received:", {
+    userId,
+    lat,
+    lon,
+    vehicleType,
+    event,
+    message,
+    test,
+  });
 
-    console.log("🚗 Parking event saved with ID:", docRef.id);
+  // Validate required fields
+  if (lat === undefined || lat === null) {
+    console.error("❌ Firebase: lat is missing or invalid");
+    return { success: false, error: "Latitude is required" };
+  }
+  if (lon === undefined || lon === null) {
+    console.error("❌ Firebase: lon is missing or invalid");
+    return { success: false, error: "Longitude is required" };
+  }
+  if (!vehicleType) {
+    console.error("❌ Firebase: vehicleType is missing");
+    return { success: false, error: "Vehicle type is required" };
+  }
+
+  try {
+    const documentData = {
+      userId: userId || null,
+      lat: Number(lat),
+      lon: Number(lon),
+      vehicleType: String(vehicleType),
+      event: String(event),
+      message: String(message || ""),
+      test: Boolean(test),
+      timestamp: serverTimestamp(),
+    };
+
+    console.log("🔥 Firebase: Document data to save:", JSON.stringify(documentData, null, 2));
+    console.log("🔥 Firebase: Attempting to add document to 'parking_events' collection...");
+
+    const docRef = await addDoc(collection(db, "parking_events"), documentData);
+
+    console.log("✅ Firebase: Parking event saved successfully");
+    console.log("✅ Firebase: Document ID:", docRef.id);
+    console.log("✅ Firebase: Collection:", "parking_events");
+    
     return { success: true, id: docRef.id };
   } catch (err) {
-    console.error("❌ reportParking error:", err);
+    console.error("❌ Firebase: reportParking error occurred");
+    console.error("❌ Firebase: Error type:", err.constructor.name);
+    console.error("❌ Firebase: Error message:", err.message);
+    console.error("❌ Firebase: Error code:", err.code);
+    console.error("❌ Firebase: Error stack:", err.stack);
     return { success: false, error: err.message };
   }
 }
